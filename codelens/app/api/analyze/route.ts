@@ -1,3 +1,5 @@
+const cache = new Map();
+
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
@@ -52,8 +54,13 @@ function safeJsonParse(maybeJson: string) {
 }
 
 export async function POST(req: Request) {
+  
   try {
     const { repoUrl } = await req.json();
+
+    if (cache.has(repoUrl)) {
+      return NextResponse.json(cache.get(repoUrl));
+    }
 
     const parsed = parseGitHubUrl(repoUrl);
     if (!parsed) {
@@ -110,6 +117,7 @@ Keep each list to 4-8 bullets max. Be honest about uncertainty.
 
     const content = completion.choices[0]?.message?.content ?? "";
     const parsedJson = safeJsonParse(content);
+    cache.set(repoUrl, parsedJson);
 
     if (!parsedJson) {
       // Don’t crash. Return something useful + the raw model output for debugging.
