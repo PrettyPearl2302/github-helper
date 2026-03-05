@@ -6,9 +6,19 @@ import OpenAI from "openai";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let client: OpenAI | null = null;
+
+function getClient() {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("Missing OPENAI_API_KEY. Set it in your environment.");
+  }
+  if (!client) {
+    client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return client;
+}
 
 function parseGitHubUrl(input: string): { owner: string; repo: string } | null {
   try {
@@ -103,7 +113,7 @@ Return valid JSON exactly matching:
 Keep each list to 4-8 bullets max. Be honest about uncertainty.
 `;
 
-    const completion = await client.chat.completions.create({
+    const completion = await getClient().chat.completions.create({
       model: "gpt-4.1-mini",
       temperature: 0.2,
       response_format: { type: "json_object" }, // THIS LINE FIXES IT
